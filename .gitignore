@@ -1,0 +1,20 @@
+# Never commit your real config — it contains the bot token.
+config.txt
+
+# Runtime state database
+state/
+*.db
+
+# Python bytecode
+__pycache__/
+*.pyc
+*.pyo
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/
+.idea/
+*.swp

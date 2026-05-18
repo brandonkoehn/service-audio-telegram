@@ -1,0 +1,38 @@
+# Service Audio → Telegram configuration.
+# Copy this file to config.txt and fill in your values.
+# config.txt is gitignored so your secrets stay local.
+
+# === Required ===
+
+# From @BotFather on Telegram. Looks like: 123456789:ABC-DEF...
+TELEGRAM_BOT_TOKEN=
+
+# Group chat ID where the bot will post. For groups, this is a negative number
+# like -1001234567890. Get it by adding @getidsbot to the group temporarily.
+TELEGRAM_CHAT_ID=
+
+# Path INSIDE THE CONTAINER where recordings appear. Don't change this unless
+# you also change the volume mount in docker-compose.yml.
+WATCH_FOLDER=/recordings
+
+# Tag that appears in Telegram captions and filenames. e.g. "Church" or "School"
+LOCATION_NAME=Church
+
+# === Optional (defaults shown) ===
+
+# Wait this many minutes after a file has stopped being written before uploading.
+# Gives butt time to fully flush and close the file.
+UPLOAD_DELAY_MINUTES=10
+
+# A file is considered "done writing" after its size has not changed for this
+# many seconds.
+FILE_STABLE_SECONDS=60
+
+# Days to keep the message in Telegram before auto-deleting.
+# IMPORTANT: For values greater than 2, the bot must be a group administrator
+# with "Delete messages" permission. Otherwise Telegram silently refuses to
+# delete messages older than 48 hours and they will remain in the chat.
+MESSAGE_RETENTION_DAYS=7
+
+# How often (seconds) to check for new files and pending deletions.
+POLL_INTERVAL_SECONDS=30

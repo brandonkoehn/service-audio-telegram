@@ -1,0 +1,13 @@
+services:
+  service-audio-telegram:
+    build: .
+    container_name: service-audio-telegram
+    restart: unless-stopped
+    volumes:
+      # Recordings folder on the Mac host, mounted read-only into the container.
+      # Edit the host path below to match where butt saves MP3s on this machine.
+      - /Users/Shared/ServiceAudio/recordings:/recordings:ro
+      # Config file lives on the host so you can edit it without rebuilding.
+      - ./config.txt:/config/config.txt:ro
+      # State database — survives container rebuilds.
+      - ./state:/state

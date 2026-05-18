@@ -1,0 +1,12 @@
+.git/
+.gitignore
+README.md
+config.txt
+config.example.txt
+state/
+*.db
+__pycache__/
+*.pyc
+.DS_Store
+.vscode/
+.idea/
