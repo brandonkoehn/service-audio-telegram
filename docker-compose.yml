@@ -3,6 +3,10 @@ services:
     build: .
     container_name: service-audio-telegram
     restart: unless-stopped
+    environment:
+      # Timezone for filenames and captions. Edit to match your location.
+      # Examples: America/Chicago, America/New_York, America/Los_Angeles, Europe/London
+      - TZ=America/Chicago
     volumes:
       # Recordings folder on the Mac host, mounted read-only into the container.
       # Edit the host path below to match where butt saves MP3s on this machine.
