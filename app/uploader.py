@@ -7,6 +7,13 @@ from pathlib import Path
 log = logging.getLogger(__name__)
 
 
+def _scrub(text: str, secret: str) -> str:
+    """Replace the bot token in any string so it can't leak to logs."""
+    if not secret:
+        return text
+    return text.replace(secret, "***BOT_TOKEN***")
+
+
 class TelegramUploader:
     def __init__(self, bot_token: str, chat_id: str):
         self.bot_token = bot_token
@@ -25,28 +32,43 @@ class TelegramUploader:
             }
             log.info("Posting %s to chat %s", display_filename, self.chat_id)
             resp = requests.post(url, data=data, files=files, timeout=600)
-        resp.raise_for_status()
+        if not resp.ok:
+            raise RuntimeError(
+                f"Telegram upload failed (HTTP {resp.status_code}): "
+                f"{_scrub(resp.text, self.bot_token)}"
+            )
         body = resp.json()
         if not body.get("ok"):
-            raise RuntimeError(f"Telegram API error: {body}")
+            raise RuntimeError(
+                f"Telegram API error: {_scrub(str(body), self.bot_token)}"
+            )
         message_id = body["result"]["message_id"]
         log.info("Uploaded successfully, message_id=%s", message_id)
         return message_id
 
     def delete_message(self, message_id: int) -> bool:
         url = f"{self.base_url}/deleteMessage"
-        resp = requests.post(
-            url,
-            data={"chat_id": self.chat_id, "message_id": message_id},
-            timeout=30,
-        )
-        body = resp.json()
+        try:
+            resp = requests.post(
+                url,
+                data={"chat_id": self.chat_id, "message_id": message_id},
+                timeout=30,
+            )
+        except requests.RequestException as e:
+            log.warning("Network error deleting message_id=%s: %s",
+                        message_id, _scrub(str(e), self.bot_token))
+            return False
+        body = resp.json() if resp.headers.get("content-type", "").startswith("application/json") else {}
         if body.get("ok"):
             log.info("Deleted message_id=%s", message_id)
             return True
-        # If message is already gone or too old (>48h), Telegram returns an error.
-        # We treat that as "done" so we don't keep retrying forever.
-        log.warning("Could not delete message_id=%s: %s", message_id, body)
+        # If message is already gone or too old, Telegram returns an error.
+        # Treat as "done" so we don't keep retrying forever.
+        log.warning(
+            "Could not delete message_id=%s: %s",
+            message_id,
+            _scrub(str(body or resp.text), self.bot_token),
+        )
         return False
 
 

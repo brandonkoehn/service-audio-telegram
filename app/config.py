@@ -70,6 +70,14 @@ class Config:
         return int(self._values.get("POLL_INTERVAL_SECONDS", "30"))
 
     @property
+    def transcode_bitrate_kbps(self) -> int:
+        return int(self._values.get("TRANSCODE_BITRATE_KBPS", "64"))
+
+    @property
+    def transcode_mono(self) -> bool:
+        return self._values.get("TRANSCODE_MONO", "true").lower() in ("1", "true", "yes", "on")
+
+    @property
     def state_db_path(self) -> str:
         return self._values.get("STATE_DB_PATH", "/state/state.db")
 
@@ -80,5 +88,7 @@ class Config:
             f"Upload delay: {self.upload_delay_minutes} min after file stable\n"
             f"File stable threshold: {self.file_stable_seconds} sec\n"
             f"Message retention: {self.retention_days} days\n"
+            f"Transcode bitrate: {self.transcode_bitrate_kbps} kbps "
+            f"({'mono' if self.transcode_mono else 'stereo'})\n"
             f"State DB: {self.state_db_path}"
         )

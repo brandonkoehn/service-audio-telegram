@@ -12,6 +12,7 @@ from datetime import datetime, timedelta, timezone
 
 from config import Config
 from state import State
+from transcode import transcode_if_needed, cleanup_transcoded
 from uploader import TelegramUploader, build_display_filename, build_caption
 from watcher import FolderWatcher
 
@@ -47,11 +48,35 @@ def process_ready_files(watcher, uploader, state, config):
         display_name = build_display_filename(stat.st_mtime, config.location_name)
         caption = build_caption(stat.st_mtime, config.location_name)
 
+        transcoded = None
         try:
-            message_id = uploader.upload_audio(path, display_name, caption)
+            transcoded = transcode_if_needed(
+                path,
+                bitrate_kbps=config.transcode_bitrate_kbps,
+                mono=config.transcode_mono,
+            )
+            message_id = uploader.upload_audio(transcoded, display_name, caption)
         except Exception as e:
             log.exception("Upload failed for %s: %s", path, e)
+            # Record a "tombstone" so we don't retry this file forever.
+            # message_id=0 is a sentinel meaning "never actually uploaded."
+            state.record_upload(
+                str(path),
+                stat.st_size,
+                stat.st_mtime,
+                message_id=0,
+                delete_after=datetime.now(timezone.utc),
+            )
+            log.warning(
+                "Marking %s as permanently failed; will not retry. "
+                "Fix the underlying issue and either rename the file or "
+                "clear state.db to retry.",
+                path.name,
+            )
             continue
+        finally:
+            if transcoded is not None:
+                cleanup_transcoded(transcoded, path)
 
         delete_after = datetime.now(timezone.utc) + timedelta(days=config.retention_days)
         state.record_upload(str(path), stat.st_size, stat.st_mtime, message_id, delete_after)
@@ -60,6 +85,10 @@ def process_ready_files(watcher, uploader, state, config):
 
 def process_pending_deletions(uploader, state):
     for source_path, message_id in state.pending_deletions():
+        if message_id == 0:
+            # Tombstone for a failed upload; nothing to delete.
+            state.mark_deleted(source_path)
+            continue
         try:
             uploader.delete_message(message_id)
         except Exception as e:

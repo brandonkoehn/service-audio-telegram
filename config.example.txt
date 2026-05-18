@@ -36,3 +36,10 @@ MESSAGE_RETENTION_DAYS=7
 
 # How often (seconds) to check for new files and pending deletions.
 POLL_INTERVAL_SECONDS=30
+
+# Telegram bots are capped at 50 MB per audio upload. If a recording exceeds
+# that, ffmpeg re-encodes it to this bitrate before uploading. Sermon audio
+# at 64 kbps mono sounds fine and gets ~28 MB per hour. The original file on
+# disk is never modified.
+TRANSCODE_BITRATE_KBPS=64
+TRANSCODE_MONO=true
